@@ -2,6 +2,7 @@ package com.rashi.audiovideo;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
@@ -10,9 +11,14 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     Button btnAudio, btnImage, btnVideo;
     String selectedPath;
+    Bitmap bitmap;
+    byte[] byteArray;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,24 +75,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             {
                 System.out.println("SELECT_IMAGE");
                 Uri selectedImageUri = data.getData();
-                selectedPath = getPath(selectedImageUri);
+                //filePath = data.getData();
+               /*try {
+                   bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImageUri);
+                    //ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    //bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    //byteArray = stream.toByteArray();
+
+                    //Intent in1 = new Intent(this, ImageActivity.class);
+                    //in1.putExtra("image",byteArray);
+                   // imageView.setImageBitmap(bitmap);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }*/
+                selectedPath = getImagePath(selectedImageUri);
+                //ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                //bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                //byteArray = stream.toByteArray();
                 System.out.println("SELECT_AUDIO Path : " + selectedPath);
                 Intent i = new Intent(this, ImageActivity.class);
+                i.putExtra("Path",selectedPath);
                 i.putExtra("Image",selectedImageUri);
+                Log.i("Path",selectedPath);
+                //i.putExtra("Bitmap",bitmap);
                 startActivity(i);
             } else if(requestCode == 102){
                 System.out.println("SELECT_AUDIO");
                 Uri selectedAudioUri = data.getData();
-                selectedPath = getPath(selectedAudioUri);
+                selectedPath = getAudioPath(selectedAudioUri);
                 Log.i("uri",selectedAudioUri.toString());
                 System.out.println("SELECT_AUDIO Path : " + selectedPath);
-                Intent i = new Intent(this, AudioActivity.class);
-                i.putExtra("Audio",selectedAudioUri);
+                Log.i("selected",selectedPath);
+                //Intent i = new Intent(this, AudioActivity.class);
+                Intent i = new Intent(this, AudioUpload.class);
+                i.putExtra("Audio",selectedPath);
+                i.putExtra("AudioUri",selectedAudioUri);
                 startActivity(i);
             }else if(requestCode== 103){
                 System.out.println("SELECT_VIDEO");
                 Uri selectedVideoUri = data.getData();
-                selectedPath = getPath(selectedVideoUri);
+                selectedPath = getAudioPath(selectedVideoUri);
                 Log.i("uri",selectedVideoUri.toString());
                 System.out.println("SELECT_AUDIO Path : " + selectedPath);
                 Intent i = new Intent(this, VideoActivity.class);
@@ -97,11 +125,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public String getPath(Uri uri) {
+    public String getAudioPath(Uri uri) {
+        String[] projection = { MediaStore.Audio.Media.DATA };
+        Cursor cursor = managedQuery(uri, projection, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
+    }
+
+    public String getImagePath(Uri uri) {
         String[] projection = { MediaStore.Images.Media.DATA };
         Cursor cursor = managedQuery(uri, projection, null, null, null);
         int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
         cursor.moveToFirst();
         return cursor.getString(column_index);
     }
+
+
 }

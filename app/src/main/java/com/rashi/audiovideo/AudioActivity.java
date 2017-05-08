@@ -1,10 +1,13 @@
 package com.rashi.audiovideo;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -26,11 +29,13 @@ import com.android.volley.toolbox.Volley;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.HashMap;
@@ -41,9 +46,10 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
     Button play, stop, upload;
     MediaPlayer mediaPlayer;
     Uri rcvUri;
+    String recvPath;
     RequestQueue requestQueue;
     String encodedAudio;
-    byte[] byteArray;
+    byte[] byteArray,soundBytes;
     ProgressDialog dialog;
     static final int BUFFER_SIZE = 4096;
 
@@ -60,7 +66,8 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
         upload.setOnClickListener(this);
         seekBar.setOnSeekBarChangeListener(this);
         Intent rcvImage = getIntent();
-        rcvUri = rcvImage.getParcelableExtra("Audio");
+        rcvUri = rcvImage.getParcelableExtra("AudioUri");
+        recvPath = rcvImage.getStringExtra("Audio");
         mediaPlayer = new MediaPlayer();
         try {
             mediaPlayer.setDataSource(this, rcvUri);
@@ -92,6 +99,42 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
         } else if (v.getId() == R.id.buttonAudioUpload) {
             dialog.show();
+            //DataOutputStream dos = new DataOutputStream();
+          /*  File file = new File(rcvUri.getPath());
+            byte[] b = new byte[(int) file.length()];
+            try {
+                FileInputStream fileInputStream = new FileInputStream(file);
+                fileInputStream.read(b);
+                for (int i = 0; i < b.length; i++) {
+                    System.out.print((char) b[i]);
+                }
+            } catch (FileNotFoundException e) {
+                System.out.println("File Not Found.");
+                Toast.makeText(this,"File not found"+e.toString(),Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+            } catch (IOException e1) {
+                System.out.println("Error Reading The File.");
+                Toast.makeText(this,"Error Reading The File.",Toast.LENGTH_LONG).show();
+                e1.printStackTrace();
+            }
+            encodedAudio = Base64.encodeToString(b, Base64.DEFAULT);
+
+            Log.i("encodedAudio", encodedAudio); */
+           /* try {
+                InputStream inputStream =
+                        getContentResolver().openInputStream(Uri.fromFile(new File(rcvUri.getPath())));
+
+                soundBytes = new byte[inputStream.available()];
+                soundBytes = toByteArray(inputStream);
+                encodedAudio = Base64.encodeToString(soundBytes,Base64.DEFAULT);
+                Log.i("encode", encodedAudio);
+                Toast.makeText(this, encodedAudio, Toast.LENGTH_LONG).show();
+
+                Toast.makeText(this, "Recordin Finished"+ " " + soundBytes, Toast.LENGTH_LONG).show();
+            } catch(Exception e) {
+                e.printStackTrace();
+            } */
+
             uploadOnCloud();
         }
     }
@@ -122,41 +165,42 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
 
     void uploadOnCloud() {
-      /*  ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+      //ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         //byteArray = byteArrayOutputStream.toByteArray();
 
+        //String path= Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+rcvUri.getPath();
 
-        File file = new File(rcvUri.toString());
-        byte[] b = new byte[(int) file.length()];
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            fileInputStream.read(b);
-            for (int i = 0; i < b.length; i++) {
-                System.out.print((char) b[i]);
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("File Not Found.");
-            e.printStackTrace();
-        } catch (IOException e1) {
-            System.out.println("Error Reading The File.");
-            e1.printStackTrace();
-        }
-        encodedAudio = Base64.encodeToString(b, Base64.DEFAULT);
-
-
-        Log.i("audio", encodedAudio);
-        Toast.makeText(this, encodedAudio, Toast.LENGTH_LONG).show();*/
-
-        try {
-          byteArray= convert(rcvUri.getPath());
-            encodedAudio = Base64.encodeToString(byteArray,0);
+        //Toast.makeText(this, encodedAudio, Toast.LENGTH_LONG).show();
+/*
+       try {
+          byteArray= convert(recvPath);
+            encodedAudio = Base64.encodeToString(byteArray,Base64.DEFAULT);
             Log.i("encode", encodedAudio);
             Toast.makeText(this, encodedAudio, Toast.LENGTH_LONG).show();
 
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        }*/
+
+        //final File file=new File(recvPath);
+
+        /*byte[] soundBytes;
+
+        try {
+            InputStream inputStream =
+                    getContentResolver().openInputStream(Uri.fromFile(new File(recvPath)));
+
+            soundBytes = new byte[inputStream.available()];
+            soundBytes = toByteArray(inputStream);
+            encodedAudio = Base64.encodeToString(soundBytes,Base64.DEFAULT);
+            Log.i("encode", encodedAudio);
+            Toast.makeText(this, encodedAudio, Toast.LENGTH_LONG).show();
+
+            Toast.makeText(this, "Recordin Finished"+ " " + soundBytes, Toast.LENGTH_LONG).show();
+        } catch(Exception e) {
+            e.printStackTrace();
+        }*/
         StringRequest stringRequest = new StringRequest(Request.Method.POST, Util.urlAudioUpload, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
@@ -175,7 +219,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
                 HashMap<String, String> map = new HashMap<>();
-                map.put("audioName", "ABC");
+                map.put("audioName", "abc");
                 map.put("audioData", encodedAudio);
                 return map;
             }
@@ -200,6 +244,20 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
         return bytes;
     }
+
+    public byte[] toByteArray(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int read = 0;
+        byte[] buffer = new byte[1024];
+        while (read != -1) {
+            read = in.read(buffer);
+            if (read != -1)
+                out.write(buffer,0,read);
+        }
+        out.close();
+        return out.toByteArray();
+    }
+
 }
 
 
