@@ -20,6 +20,7 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -165,6 +166,7 @@ public class AudioActivity extends AppCompatActivity implements View.OnClickList
 
 
     void uploadOnCloud() {
+
       //ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         //byteArray = byteArrayOutputStream.toByteArray();

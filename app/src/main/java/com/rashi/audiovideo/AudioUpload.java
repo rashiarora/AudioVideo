@@ -4,34 +4,34 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
-public class AudioUpload extends AppCompatActivity implements View.OnClickListener, SeekBar.OnSeekBarChangeListener{
+
+public class AudioUpload extends AppCompatActivity implements View.OnClickListener, SeekBar.OnSeekBarChangeListener {
     SeekBar seekBar;
     Button play, stop, upload;
     MediaPlayer mediaPlayer;
@@ -39,10 +39,10 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
     String recvPath;
     RequestQueue requestQueue;
     String encodedAudio;
-    byte[] byteArray,soundBytes;
+    byte[] byteArray, soundBytes;
     ProgressDialog dialog;
     static final int BUFFER_SIZE = 4096;
-    OkHttpClient okHttpClient;
+
     File file;
     String encodedBase64 = null;
 
@@ -61,6 +61,7 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
         Intent rcvImage = getIntent();
         rcvUri = rcvImage.getParcelableExtra("AudioUri");
         recvPath = rcvImage.getStringExtra("Audio");
+        Log.i("path", rcvUri.toString());
         mediaPlayer = new MediaPlayer();
         try {
             mediaPlayer.setDataSource(this, rcvUri);
@@ -79,62 +80,25 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
         dialog.setCancelable(false);
 
 
-
-    }
-    void httpCode(){
-        okHttpClient = new OkHttpClient();
-        Request request = new Request.Builder().url("url").build();
-
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-
-            }
-        });
-
-
-
-    }
-
-    MultipartBody uploadRequestBody(String audioFormat, String title, File file){
-        MediaType MEDIA_TYPE = MediaType.parse("audio/" + audioFormat); // e.g. "image/png"
-        return new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("format", "json")
-                .addFormDataPart("filename", title + "." + audioFormat) //e.g. title.png --> imageFormat = png
-                .addFormDataPart("file", "...", RequestBody.create(MEDIA_TYPE, file))
-                .build();
-    }
-    HttpUrl buildURL() {
-        return new HttpUrl.Builder()
-                .scheme("http") //http
-                .host("rashiarora.esy.es")
-                .addPathSegment("training/audio_upload.php")//adds "/pathSegment" at the end of hostname
-                .addQueryParameter("audioName", "abc") //add query parameters to the URL
-                .addEncodedQueryParameter("audioData",encodedBase64 )//add encoded query parameters to the URL
-                .build();
     }
 
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.buttonPlay) {
+        if (v.getId() == R.id.buttonPlay1) {
 
             mediaPlayer.start();
+            Toast.makeText(this, "Play", Toast.LENGTH_LONG).show();
 
-        } else if (v.getId() == R.id.buttonStop) {
+        } else if (v.getId() == R.id.buttonStop1) {
 
             mediaPlayer.stop();
+            Toast.makeText(this, "Stop", Toast.LENGTH_LONG).show();
 
-        } else if (v.getId() == R.id.buttonAudioUpload) {
-            dialog.show();
-
-            file= new File(rcvUri.getPath());
+        } else if (v.getId() == R.id.buttonAudioUpload1) {
+            //dialog.show();
+            //doFileUpload();
+           /* file= new File(rcvUri.getPath());
 
             try {
                 FileInputStream fileInputStreamReader = new FileInputStream(file);
@@ -146,16 +110,11 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-            try {
-                POST(okHttpClient, buildURL(), uploadRequestBody( "png", "title", file));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            httpCode();
+*/
+          MyTask myTask = new MyTask();
+            myTask.execute();
         }
     }
-
 
 
     @Override
@@ -182,24 +141,101 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
         mediaPlayer.release();
     }
 
-    //GET network request
-    public static String GET(OkHttpClient client, HttpUrl url) throws IOException {
-        Request request = new Request.Builder()
-                .url(url)
-                .build();
-        Response response = client.newCall(request).execute();
-        return response.body().string();
+    class MyTask extends AsyncTask {
+
+        @Override
+        protected Object doInBackground(Object[] params) {
+
+            HttpURLConnection conn = null;
+            DataOutputStream dos = null;
+            DataInputStream inStream = null;
+            //String existingFileName = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mypic.png";
+            String lineEnd = "\r\n";
+            String twoHyphens = "--";
+            String boundary = "*****";
+            int bytesRead, bytesAvailable, bufferSize;
+            byte[] buffer;
+            int maxBufferSize = 1 * 1024 * 1024;
+            String responseFromServer = "";
+            //String urlString = "http://mywebsite.com/directory/upload.php";
+
+            try {
+
+                //------------------ CLIENT REQUEST
+                FileInputStream fileInputStream = new FileInputStream(new File(recvPath));
+                // open a URL connection to the Servlet
+                URL url = new URL(Util.urlAudioUpload);
+                // Open a HTTP connection to the URL
+                conn = (HttpURLConnection) url.openConnection();
+                // Allow Inputs
+                conn.setDoInput(true);
+                // Allow Outputs
+                conn.setDoOutput(true);
+                // Don't use a cached copy.
+                conn.setUseCaches(false);
+                // Use a post method.
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Connection", "Keep-Alive");
+                conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                dos = new DataOutputStream(conn.getOutputStream());
+                dos.writeBytes(twoHyphens + boundary + lineEnd);
+                dos.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + recvPath + "\"" + lineEnd);
+                dos.writeBytes(lineEnd);
+                // create a buffer of maximum size
+                bytesAvailable = fileInputStream.available();
+                bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                buffer = new byte[bufferSize];
+                // read file and write it into form...
+                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                while (bytesRead > 0) {
+
+                    dos.write(buffer, 0, bufferSize);
+                    bytesAvailable = fileInputStream.available();
+                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
+                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                }
+
+                // send multipart form data necesssary after file data...
+                dos.writeBytes(lineEnd);
+                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                // close streams
+                Log.e("Debug", "File is written");
+                fileInputStream.close();
+                dos.flush();
+                dos.close();
+
+            } catch (MalformedURLException ex) {
+                Log.e("Debug", "error: " + ex.getMessage(), ex);
+            } catch (IOException ioe) {
+                Log.e("Debug", "error: " + ioe.getMessage(), ioe);
+            }
+
+            //------------------ read the SERVER RESPONSE
+            try {
+
+                inStream = new DataInputStream(conn.getInputStream());
+                String str;
+
+                while ((str = inStream.readLine()) != null) {
+
+                    Log.e("Debug", "Server Response " + str);
+
+                }
+
+                inStream.close();
+                //dialog.dismiss();
+
+            } catch (IOException ioex) {
+                Log.e("Debug", "error: " + ioex.getMessage(), ioex);
+            }
+            return null;
+        }
     }
-
-    //POST network request
-    public static String POST(OkHttpClient client, HttpUrl url, RequestBody body) throws IOException {
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
-        Response response = client.newCall(request).execute();
-        return response.body().string();
-    }
-
-
 }
+
+
+
+
+
