@@ -114,17 +114,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }else if(requestCode== 103){
                 System.out.println("SELECT_VIDEO");
                 Uri selectedVideoUri = data.getData();
-                selectedPath = getAudioPath(selectedVideoUri);
-                Log.i("uri",selectedVideoUri.toString());
+                selectedPath = getVideoPath(selectedVideoUri);
+                Log.i("Videouri",selectedVideoUri.toString());
                 System.out.println("SELECT_AUDIO Path : " + selectedPath);
+                Log.i("Videoselected",selectedPath);
                 Intent i = new Intent(this, VideoActivity.class);
-                i.putExtra("Video",selectedVideoUri);
+                i.putExtra("VideoUri",selectedVideoUri);
+                i.putExtra("Video",selectedPath);
                 startActivity(i);
             }
 
         }
     }
 
+    public String getVideoPath(Uri uri) {
+        String[] projection = { MediaStore.Video.Media.DATA };
+        Cursor cursor = managedQuery(uri, projection, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
+    }
     public String getAudioPath(Uri uri) {
         String[] projection = { MediaStore.Audio.Media.DATA };
         Cursor cursor = managedQuery(uri, projection, null, null, null);

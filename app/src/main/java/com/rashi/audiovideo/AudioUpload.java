@@ -142,6 +142,12 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
     }
 
     class MyTask extends AsyncTask {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog.show();
+            Toast.makeText(AudioUpload.this,"Upload started",Toast.LENGTH_LONG).show();
+        }
 
         @Override
         protected Object doInBackground(Object[] params) {
@@ -155,7 +161,7 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
             String boundary = "*****";
             int bytesRead, bytesAvailable, bufferSize;
             byte[] buffer;
-            int maxBufferSize = 1 * 1024 * 1024;
+            int maxBufferSize = 5 * 1024 * 1024;
             String responseFromServer = "";
             //String urlString = "http://mywebsite.com/directory/upload.php";
 
@@ -231,6 +237,13 @@ public class AudioUpload extends AppCompatActivity implements View.OnClickListen
                 Log.e("Debug", "error: " + ioex.getMessage(), ioex);
             }
             return null;
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+            dialog.dismiss();
+            Toast.makeText(AudioUpload.this,"Upload Finished",Toast.LENGTH_LONG).show();
         }
     }
 }
